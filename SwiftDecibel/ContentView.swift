@@ -9,10 +9,6 @@ struct ContentView: View {
             Text("デシベル: \(String(format: "%.1f", audioRecorder.decibels)) dB")
                 .font(.largeTitle)
                 .padding()
-            
-            Text("平均ピーク振幅: \(String(format: "%.2f", audioRecorder.peakAmplitude))")
-                .font(.title)
-                .padding()
 
             Button(action: {
                 if audioRecorder.isRecording {
@@ -39,7 +35,7 @@ class AudioRecorder: ObservableObject {
     
     @Published var decibels: Float = 0.0
     @Published var peakAmplitude: Float = 0.0
-    @Published var isRecording: Bool = false
+    @Published var isRecording: Bool = false //計測するときはtrue
     
     init() {
         setupRecorder()
@@ -91,16 +87,12 @@ class AudioRecorder: ObservableObject {
         let minRMS: Float = 1e-7  // これより小さいと -∞ dB になる
         let adjustedRMS = max(rms, minRMS)
         
-        // 基準レベル (20μPa = 0.00002 Pa) に調整
-        let referenceLevel: Float = 1.0  // 20μPa (人間の聴覚基準)
+        let referenceLevel: Float = 1.0
         
-        // 環境騒音レベルに近づけるdB計算
-        self.decibels = 20 * log10(adjustedRMS / referenceLevel) + 94.0 // デジタルdBからdBSPL変換
+        DispatchQueue.main.async {
+            self.decibels = 20 * log10(adjustedRMS / referenceLevel) + 94.0
+        }
+        print(self.decibels) //デバック用
         
-        // ピーク振幅も dB に変換
-        let minPeak: Float = 1e-7
-        let adjustedPeak = max(peak, minPeak)
-        self.peakAmplitude = 20 * log10(adjustedPeak / referenceLevel)
-        print(self.decibels)
     }
 }
