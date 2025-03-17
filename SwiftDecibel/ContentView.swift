@@ -3,13 +3,21 @@ import AVFoundation
 
 struct ContentView: View {
     @StateObject private var audioRecorder = AudioRecorder()
+    @State var TargetDecibel: Float = 0.0
+    @State var judgeScore = false
 
     var body: some View {
         VStack {
+            Text(judgeScore ? "成功！" : "あとちょっと！")
             Text("デシベル: \(String(format: "%.1f", audioRecorder.decibels)) dB")
-                .font(.largeTitle)
                 .padding()
-
+            
+            if !audioRecorder.isRecording {
+                TextField("Float", value: $TargetDecibel, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                
+                    .keyboardType(.decimalPad)
+            }
             Button(action: {
                 if audioRecorder.isRecording {
                     audioRecorder.stopRecording()
@@ -25,6 +33,13 @@ struct ContentView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
+            .onAppear {
+                audioRecorder.targetDecibel = TargetDecibel
+            }
+            // onChangeの新しい使用方法
+            .onChange(of: audioRecorder.decibels) {
+                judgeScore = audioRecorder.decibels > TargetDecibel
+            }
         }
     }
 }
@@ -35,7 +50,9 @@ class AudioRecorder: ObservableObject {
     
     @Published var decibels: Float = 0.0
     @Published var peakAmplitude: Float = 0.0
-    @Published var isRecording: Bool = false //計測するときはtrue
+    @Published var isRecording: Bool = false // 計測するときはtrue
+    
+    var targetDecibel: Float = 0.0
     
     init() {
         setupRecorder()
@@ -92,7 +109,6 @@ class AudioRecorder: ObservableObject {
         DispatchQueue.main.async {
             self.decibels = 20 * log10(adjustedRMS / referenceLevel) + 94.0
         }
-        print(self.decibels) //デバック用
-        
+        print(self.decibels) // デバック用
     }
 }
